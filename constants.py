@@ -10,6 +10,7 @@ WANDER_DISTANCE = 150          # distance to move during wandering, in mm
 WANDER_TURN_ANGLE = 90         # angle to turn randomly during wandering, in degrees
 
 # Wall-following behavior
+WALL_DETECT_THRESHOLD = 100    # distance threshold for detecting a wall, in mm
 WALL_FOLLOW_MIN_DISTANCE = 100  # minimum distance from wall, in mm
 WALL_FOLLOW_MAX_DISTANCE = 200  # maximum distance from wall, in mm
 WALL_FOLLOW_ADJUST_ANGLE = 10  # angle adjustment when following wall, in degrees
