@@ -13,7 +13,7 @@ WANDER_TURN_ANGLE = 90         # angle to turn randomly during wandering, in deg
 WALL_DETECT_THRESHOLD = 100    # distance threshold for detecting a wall, in mm
 WALL_FOLLOW_MIN_DISTANCE = 100  # minimum distance from wall, in mm
 WALL_FOLLOW_MAX_DISTANCE = 200  # maximum distance from wall, in mm
-WALL_FOLLOW_ADJUST_ANGLE = 10  # angle adjustment when following wall, in degrees
+WALL_FOLLOW_ADJUST_ANGLE = 5  # angle adjustment when following wall, in degrees
 WALL_FOLLOW_STEP = 50          # step size to move forward while following wall, in mm
 
 # Fire detection
