@@ -17,14 +17,14 @@ class Robot:
         self.hub = PrimeHub()
 
         # Motors
-        self.left_motor = Motor(Port.A, Direction.COUNTERCLOCKWISE)
-        self.right_motor = Motor(Port.B, Direction.CLOCKWISE)
-        self.fan_motor = Motor(Port.F)
+        self.left_motor = Motor(Port.F, Direction.COUNTERCLOCKWISE)
+        self.right_motor = Motor(Port.D, Direction.CLOCKWISE)
+        self.fan_motor = Motor(Port.B)
 
         # Sensors
-        self.color_sensor = ColorSensor(Port.C)
-        self.force_sensor = ForceSensor(Port.D)
-        self.side_sensor = UltrasonicSensor(Port.E)
+        self.color_sensor = ColorSensor(Port.E)
+        self.force_sensor = ForceSensor(Port.C)
+        self.side_sensor = UltrasonicSensor(Port.A)
 
         # Drive Bases
         self.drive_base = DriveBase(
@@ -75,10 +75,6 @@ class Robot:
             self.drive_base.turn(angle_adjustment)
             self.drive_base.straight(constants.WALL_FOLLOW_STEP)
 
-    def fire_detection(self):
-        """Rotate to find flame direction and approach."""
-        self.initial_scan_for_flame()
-
     def extinguish(self):
         """Activate fan and cool down after extinguishing fire."""
         print("Extinguishing fire...")
@@ -113,4 +109,5 @@ class Robot:
                 self.transition_to(EXTINGUISH)
 
         elif self.current_state == EXTINGUISH:
+            self.raise_alarm()
             self.extinguish()
