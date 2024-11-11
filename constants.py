@@ -50,3 +50,6 @@ APPROACH_FLAME_STEP_DISTANCE = 50  # step size to move toward the flame, in mm
 # Goal Detection (Red Color Threshold)
 # Color constant for detecting the goal area (red area under flame)
 GOAL_COLOR = FIRE_AREA_COLOR
+
+# Obstacle Detection (Ultrasonic Sensor)
+OBSTACLE_TURN_ANGLE = 20  # angle to turn when an obstacle is detected, in degrees

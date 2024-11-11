@@ -63,17 +63,24 @@ class Robot:
             self.drive_base.straight(constants.WANDER_DISTANCE)
 
     def wall_following(self):
-        """Wall-following behavior with smoother adjustments."""
+        """Wall-following behavior with smoother adjustments based on proximity to the wall."""
         if self.detect_obstacle():
+            # When the ForceSensor detects contact, back up slightly and make a gradual turn
             self.drive_base.straight(-constants.WALL_FOLLOW_STEP)
-            self.drive_base.turn(-90)
+        
+            # Calculate an angle adjustment based on how close the obstacle is, rather than a hard turn
+            angle_adjustment = -constants.OBSTACLE_TURN_ANGLE  # e.g., -20 or a smaller, more gradual turn
+            self.drive_base.turn(angle_adjustment)
         elif not self.detect_wall_on_right():
-            self.drive_base.turn(-90)
+            # If no wall is detected on the right, make a gradual turn instead of a sharp 90° left
+            self.drive_base.turn(-constants.WALL_FOLLOW_ADJUST_ANGLE * 3)
         else:
+            # For smooth wall following, adjust angle based on the distance error
             distance_error = constants.WALL_FOLLOW_MIN_DISTANCE - self.side_sensor.distance()
             angle_adjustment = distance_error * constants.WALL_FOLLOW_ADJUST_ANGLE
             self.drive_base.turn(angle_adjustment)
             self.drive_base.straight(constants.WALL_FOLLOW_STEP)
+
 
     def extinguish(self):
         """Activate fan and cool down after extinguishing fire."""
