@@ -15,7 +15,7 @@ WALL_FOLLOW_MIN_DISTANCE = 100  # minimum distance from wall, in mm
 WALL_FOLLOW_MAX_DISTANCE = 200  # maximum distance from wall, in mm
 WALL_FOLLOW_ADJUST_ANGLE = 15  # angle adjustment when following wall, in degrees
 # step size to move forward while following wall, in mm
-WALL_FOLLOW_STEP_DISTANCE = 50
+WALL_FOLLOW_STEP = 50
 
 # Fire detection
 FIRE_AREA_COLOR = Color.RED    # color of the paper below the candle
