@@ -1,15 +1,15 @@
 from pybricks.robotics import DriveBase
-from pybricks.pupdevices import Motor, ColorDistanceSensor, ForceSensor, UltrasonicSensor
+from pybricks.pupdevices import Motor, ColorSensor, ForceSensor, UltrasonicSensor
 from pybricks.parameters import Port, Direction, Color
 from pybricks.hubs import PrimeHub
+import urandom as rand
 import constants
 
 # State Constants
 WANDER = 1
 WALL_FOLLOWING = 2
-FIRE_DETECTION = 3
-EXTINGUISH = 4
-COMPLETE = 5
+EXTINGUISH = 3
+COMPLETE = 4
 
 
 class Robot:
@@ -18,16 +18,16 @@ class Robot:
         self.hub = PrimeHub()
 
         # Motors
-        self.left_motor = Motor(Port.A, Direction.COUNTERCLOCKWISE)
-        self.right_motor = Motor(Port.B, Direction.CLOCKWISE)
-        self.fan_motor = Motor(Port.F)
+        self.left_motor = Motor(Port.F, Direction.COUNTERCLOCKWISE)
+        self.right_motor = Motor(Port.D, Direction.CLOCKWISE)
+        self.fan_motor = Motor(Port.B)
 
         # Sensors
-        self.color_distance_sensor = ColorDistanceSensor(Port.C)
-        self.touch_sensor = ForceSensor(Port.D)
-        self.side_sensor = UltrasonicSensor(Port.E)
+        self.color_sensor = ColorSensor(Port.C)
+        self.force_sensor = ForceSensor(Port.E)
+        self.side_sensor = UltrasonicSensor(Port.A)
 
-        # Drive Base
+        # Drive Bases
         self.drive_base = DriveBase(
             self.left_motor,
             self.right_motor,
@@ -41,75 +41,57 @@ class Robot:
 
     def detect_obstacle(self):
         """Detect if an obstacle is close by checking the touch sensor."""
-        if self.touch_sensor.touched():
+        if self.force_sensor.touched():
             self.drive_base.stop()
             return True
         return False
 
     def detect_wall_on_right(self):
         """Detect wall or opening on the right side for wall following."""
-        return self.side_sensor.distance() < constants.WALL_FOLLOW_MIN_DISTANCE
-
-    def detect_flame(self):
-        """Detect flame by measuring ambient light intensity and proximity."""
-        # Check if the ambient light intensity is above the threshold, indicating flame presence.
-        return self.color_distance_sensor.ambient() > constants.FLAME_DETECTION_THRESHOLD
+        return self.side_sensor.distance() < constants.WALL_DETECT_THRESHOLD
 
     def detect_goal(self):
         """Detect if the robot is on the goal tile (Red)."""
-        return self.color_distance_sensor.color() == constants.GOAL_COLOR
-
-    def initial_scan_for_flame(self):
-        """Rotate 360 degrees to detect flame direction."""
-        for _ in range(8):  # Divide 360° into eight 45° turns
-            if self.detect_flame():
-                print("Flame detected during initial scan")
-                return True
-            self.drive_base.turn(45)
-        return False
-
-    def approach_flame(self):
-        """Move toward the flame's location until the robot detects the red goal area."""
-        while not self.detect_goal():
-            if self.touch_sensor.touched():
-                self.drive_base.straight(-constants.WALL_FOLLOW_STEP)
-                self.drive_base.turn(-90)  # Turn left to avoid obstacle
-            else:
-                self.drive_base.straight(
-                    constants.APPROACH_FLAME_STEP_DISTANCE)
-        self.extinguish()
+        return self.color_sensor.color() == constants.GOAL_COLOR
 
     def wander(self):
         """Drive forward until an obstacle is hit, then switch to wall-following."""
         if self.detect_obstacle():
-            self.drive_base.straight(-constants.WALL_FOLLOW_STEP)
-            self.drive_base.turn(-90)
+            self.drive_base.straight(-constants.BACKUP_DISTANCE)
+            self.drive_base.turn(-constants.WANDER_TURN_ANGLE)
             self.transition_to(WALL_FOLLOWING)
         else:
-            self.drive_base.straight(constants.WANDER_DISTANCE)
+            self.drive_base.drive(constants.WANDER_DRIVE_SPEED, 0)
 
     def wall_following(self):
-        """Wall-following behavior with smoother adjustments."""
+        """Wall-following behavior with smoother adjustments, prioritizing right-side corrections."""
         if self.detect_obstacle():
-            self.drive_base.straight(-constants.WALL_FOLLOW_STEP)
-            self.drive_base.turn(-90)
+            # When ForceSensor detects contact, back up and make a sharp left turn
+            self.drive_base.straight(-constants.BACKUP_DISTANCE)
+            self.drive_base.turn(-constants.WALL_FOLLOW_TURN_ANGLE)
         elif not self.detect_wall_on_right():
-            self.drive_base.turn(-90)
-        else:
-            distance_error = constants.WALL_FOLLOW_MIN_DISTANCE - self.side_sensor.distance()
-            angle_adjustment = distance_error * constants.WALL_FOLLOW_ADJUST_ANGLE
-            self.drive_base.turn(angle_adjustment)
-            self.drive_base.straight(constants.WALL_FOLLOW_STEP)
+            # If no wall is detected on the right, make a gradual right turn to search for the wall
+            self.drive_base.straight(100)
+            self.drive_base.stop()
 
-    def fire_detection(self):
-        """Rotate to find flame direction and approach."""
-        self.initial_scan_for_flame()
+            # Randomly choose to turn left or right
+            value = rand.randint(0, 50)
+            print(value)
+            if value % 2 == 0:
+                self.drive_base.turn(constants.WALL_FOLLOW_TURN_ANGLE)
+            else:
+                self.drive_base.turn(-constants.WALL_FOLLOW_TURN_ANGLE)
+
+            self.transition_to(WANDER)
+        else:
+            self.drive_base.drive(constants.WALL_FOLLOW_SPEED, 0)
 
     def extinguish(self):
         """Activate fan and cool down after extinguishing fire."""
         print("Extinguishing fire...")
+        self.drive_base.stop()
         self.fan_motor.run_time(constants.FAN_SPEED, constants.FAN_RUN_TIME)
-        self.current_state = COMPLETE
+        self.transition_to(WANDER)
         print("Cooling down after extinguishing fire.")
         self.hub.light.on(Color.GREEN)
 
@@ -126,25 +108,17 @@ class Robot:
 
     def update(self):
         """Main update method to handle state transitions and execute current behavior."""
-        print(f"Current State: {self.current_state}")
 
         if self.current_state == WANDER:
-            if not self.initial_scan_for_flame():
-                print("No flame detected during initial scan. Wandering...")
-                self.wander()
-            else:
-                self.transition_to(FIRE_DETECTION)
+            self.wander()
+            if self.detect_goal():
+                self.transition_to(EXTINGUISH)
 
         elif self.current_state == WALL_FOLLOWING:
             self.wall_following()
             if self.detect_goal():
-                self.transition_to(FIRE_DETECTION)
-
-        elif self.current_state == FIRE_DETECTION:
-            self.approach_flame()
-            self.transition_to(EXTINGUISH)
+                self.transition_to(EXTINGUISH)
 
         elif self.current_state == EXTINGUISH:
+            self.raise_alarm()
             self.extinguish()
-            print("Cooldown period before returning to wander.")
-            self.transition_to(WANDER)

@@ -6,7 +6,7 @@ robot = Robot()
 
 def main():
     """Main loop to update the robot and manage the state machine."""
-    while robot.state != robot.COMPLETE:
+    while robot.current_state != 4:
         # Update the robot's state and behaviors
         robot.update()
 
